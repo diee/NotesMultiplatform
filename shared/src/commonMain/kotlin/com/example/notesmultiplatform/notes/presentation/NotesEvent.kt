@@ -1,0 +1,12 @@
+package com.example.notesmultiplatform.notes.presentation
+
+import com.example.notesmultiplatform.notes.domain.Note
+
+interface NotesEvent {
+    object OnAddNoteClick : NotesEvent
+    object OnDismissAddNoteSheet : NotesEvent
+    data class EditNote(val note: Note) : NotesEvent
+    class OnEnteredTitle(val title: String) : NotesEvent
+    class OnEnteredContent(val content: String) : NotesEvent
+    object SaveNote : NotesEvent
+}
