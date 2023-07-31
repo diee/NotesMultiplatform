@@ -17,13 +17,7 @@ class NotesViewModel() : ViewModel() {
     var newNote: Note? by mutableStateOf(null)
         private set
 
-    private val itemsList = listOf(
-        Note(0L, "Title 1", "Content 1"),
-        Note(1L, "Title 2", "Content 2"),
-        Note(2L, "Title 3", "Content 3"),
-        Note(3L, "Title 4", "Content 4"),
-        Note(4L, "Title 5", "Content 5"),
-    )
+    private var itemsList = mutableListOf<Note>()
 
     init {
         _state.value = NotesState(itemsList)
@@ -33,10 +27,10 @@ class NotesViewModel() : ViewModel() {
         when (event) {
             NotesEvent.OnAddNoteClick -> {
                 _state.update {
-                    it.copy(isAddNoteSheetOpen = true)
+                    it.copy(isAddEditNoteSheetOpen = true)
                 }
                 newNote = Note(
-                    id = null,
+                    id = itemsList.size.plus(1).toLong(),
                     title = "",
                     content = ""
                 )
@@ -44,7 +38,7 @@ class NotesViewModel() : ViewModel() {
 
             NotesEvent.OnDismissAddNoteSheet -> {
                 _state.update {
-                    it.copy(isAddNoteSheetOpen = false)
+                    it.copy(isAddEditNoteSheetOpen = false)
                 }
             }
 
@@ -57,20 +51,29 @@ class NotesViewModel() : ViewModel() {
             }
 
             NotesEvent.SaveNote -> {
-                newNote?.let { note ->
-                    val newItemsList = itemsList.toMutableList()
-                    newItemsList.add(note)
+                newNote?.let { editedNote ->
+                    val indexOfCurrentNote = itemsList.indexOfFirst { it.id == editedNote.id }
+                    if (indexOfCurrentNote != -1) {
+                        itemsList[indexOfCurrentNote] = editedNote
+                    } else {
+                        itemsList.add(editedNote)
+                    }
                     _state.update {
                         it.copy(
-                            notes = newItemsList,
-                            isAddNoteSheetOpen = false
+                            notes = itemsList,
+                            isAddEditNoteSheetOpen = false
                         )
                     }
                 }
             }
 
-            is NotesEvent.EditNote -> {
-
+            is NotesEvent.SelectNote -> {
+                newNote = event.note
+                _state.update {
+                    it.copy(
+                        isAddEditNoteSheetOpen = true
+                    )
+                }
             }
         }
     }

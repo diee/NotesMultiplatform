@@ -22,14 +22,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.notesmultiplatform.notes.domain.Note
 import com.example.notesmultiplatform.notes.presentation.NotesEvent
-import com.example.notesmultiplatform.notes.presentation.NotesState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddNoteSheet(
-    state: NotesState,
+fun AddEditNoteSheet(
     isOpen: Boolean,
-    newNote: Note? = null,
+    note: Note? = null,
     onEvent: (NotesEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -58,7 +56,7 @@ fun AddNoteSheet(
             ) {
                 Spacer(Modifier.height(100.dp))
                 TextField(
-                    value = newNote?.title ?: "",
+                    value = note?.title ?: "",
                     onValueChange = {
                         onEvent(NotesEvent.OnEnteredTitle(it))
                     },
@@ -70,7 +68,7 @@ fun AddNoteSheet(
                         .background(Color.Transparent)
                 )
                 TextField(
-                    value = newNote?.content ?: "",
+                    value = note?.content ?: "",
                     onValueChange = {
                         onEvent(NotesEvent.OnEnteredContent(it))
                     },
