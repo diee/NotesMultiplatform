@@ -4,24 +4,32 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.notesmultiplatform.notes.domain.Note
+import com.example.notesmultiplatform.notes.domain.NotesDataSource
 import dev.icerock.moko.mvvm.viewmodel.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class NotesViewModel() : ViewModel() {
+class NotesViewModel(
+    private val notesDataSource: NotesDataSource
+) : ViewModel() {
 
     private val _state = MutableStateFlow(NotesState())
-    val state = _state.asStateFlow()
 
-    var newNote: Note? by mutableStateOf(null)
+    val state = combine(
+        _state,
+        notesDataSource.getNotes()
+    ) { state, notes ->
+        state.copy(
+            notes = notes
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), NotesState())
+
+    var note: Note? by mutableStateOf(null)
         private set
-
-    private var itemsList = mutableListOf<Note>()
-
-    init {
-        _state.value = NotesState(itemsList)
-    }
 
     fun onEvent(event: NotesEvent) {
         when (event) {
@@ -29,11 +37,7 @@ class NotesViewModel() : ViewModel() {
                 _state.update {
                     it.copy(isAddEditNoteSheetOpen = true)
                 }
-                newNote = Note(
-                    id = itemsList.size.plus(1).toLong(),
-                    title = "",
-                    content = ""
-                )
+                note = Note(id = null, title = "", content = "")
             }
 
             NotesEvent.OnDismissAddNoteSheet -> {
@@ -43,36 +47,40 @@ class NotesViewModel() : ViewModel() {
             }
 
             is NotesEvent.OnEnteredTitle -> {
-                newNote = newNote?.copy(title = event.title)
+                note = note?.copy(title = event.title)
             }
 
             is NotesEvent.OnEnteredContent -> {
-                newNote = newNote?.copy(content = event.content)
+                note = note?.copy(content = event.content)
             }
 
             NotesEvent.SaveNote -> {
-                newNote?.let { editedNote ->
-                    val indexOfCurrentNote = itemsList.indexOfFirst { it.id == editedNote.id }
-                    if (indexOfCurrentNote != -1) {
-                        itemsList[indexOfCurrentNote] = editedNote
-                    } else {
-                        itemsList.add(editedNote)
+                viewModelScope.launch {
+                    note?.let {
+                        notesDataSource.addOrUpdate(it)
                     }
-                    _state.update {
-                        it.copy(
-                            notes = itemsList,
-                            isAddEditNoteSheetOpen = false
-                        )
-                    }
+                }
+
+                _state.update {
+                    it.copy(isAddEditNoteSheetOpen = false)
                 }
             }
 
             is NotesEvent.SelectNote -> {
-                newNote = event.note
+                note = event.note
                 _state.update {
-                    it.copy(
-                        isAddEditNoteSheetOpen = true
-                    )
+                    it.copy(isAddEditNoteSheetOpen = true)
+                }
+            }
+
+            is NotesEvent.OnDeleteNote -> {
+                viewModelScope.launch {
+                    note?.id?.let {
+                        notesDataSource.remove(it)
+                    }
+                    _state.update {
+                        it.copy(isAddEditNoteSheetOpen = false)
+                    }
                 }
             }
         }

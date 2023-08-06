@@ -9,4 +9,5 @@ interface NotesEvent {
     class OnEnteredContent(val content: String) : NotesEvent
     object SaveNote : NotesEvent
     data class SelectNote(val note: Note) : NotesEvent
+    object OnDeleteNote : NotesEvent
 }

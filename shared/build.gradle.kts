@@ -103,8 +103,8 @@ android {
 }
 
 sqldelight {
-    database("ContactDatabase") {
-        packageName = "com.plcoding.contactscomposemultiplatform.database"
+    database("NoteDatabase") {
+        packageName = "com.example.notesmultiplatform.database"
         sourceFolders = listOf("sqldelight")
     }
 }
